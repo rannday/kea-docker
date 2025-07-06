@@ -1,2 +1,2 @@
 # kea-docker
-Kea Docker Instance for Integration Tests
+Kea Docker instance for integration tests in my kea-api and kea-sql go modules.

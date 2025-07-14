@@ -1,7 +1,7 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-echo "Starting MySQL..."
+echo "[entrypoint] Starting MySQL..."
 /usr/sbin/mysqld \
   --socket=/var/run/mysqld/mysqld.sock \
   --user=root \
@@ -9,30 +9,41 @@ echo "Starting MySQL..."
   --innodb-flush-log-at-trx-commit=2 \
   --default-time-zone='+00:00' &
 
-echo "Waiting for MySQL to be ready..."
+MYSQL_PID=$!
+
+echo "[entrypoint] Waiting for MySQL to be ready..."
 for i in $(seq 1 30); do
   if mysqladmin ping --silent; then
-    echo "MySQL is ready."
+    echo "[entrypoint] MySQL is ready."
     break
   fi
   sleep 1
 done
 
 if ! mysqladmin ping --silent; then
-  echo "MySQL did not start within timeout." >&2
+  echo "[entrypoint] ERROR: MySQL did not start within timeout." >&2
+  kill $MYSQL_PID
   exit 1
 fi
 
-echo "Starting Kea DHCP4..."
+# Optional: Confirm Kea DB is accessible
+if ! mysql -ukea -pkea -e "USE kea;" >/dev/null 2>&1; then
+  echo "[entrypoint] ERROR: Kea DB not accessible or missing. Aborting."
+  kill $MYSQL_PID
+  exit 1
+fi
+
+echo "[entrypoint] Starting Kea DHCP4..."
 /usr/sbin/kea-dhcp4 -c /etc/kea/kea-dhcp4.conf -d &
 
-echo "Starting Kea DHCP6..."
+echo "[entrypoint] Starting Kea DHCP6..."
 /usr/sbin/kea-dhcp6 -c /etc/kea/kea-dhcp6.conf -d &
 
-echo "Starting Kea DDNS..."
+echo "[entrypoint] Starting Kea DDNS..."
 /usr/sbin/kea-dhcp-ddns -c /etc/kea/kea-dhcp-ddns.conf -d &
 
-echo "Starting Kea Control Agent..."
+echo "[entrypoint] Starting Kea Control Agent..."
 /usr/sbin/kea-ctrl-agent -c /etc/kea/kea-ctrl-agent.conf -d &
 
+# Wait for all background jobs (Kea and MySQL)
 wait

@@ -60,7 +60,7 @@ COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Healthcheck
-HEALTHCHECK CMD curl --fail http://localhost:8000/ | grep 'Control-agent' || exit 1
+HEALTHCHECK --interval=10s --timeout=3s --retries=3 CMD curl -fs http://localhost:8000/ | grep 'Control-agent' || exit 1
 
 # Set entrypoint
 CMD ["/entrypoint.sh"]

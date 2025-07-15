@@ -1,11 +1,9 @@
 @echo off
 setlocal
 
-echo Stopping and removing all Docker containers...
+echo Stopping and removing kea-custom...
 
-FOR /F "tokens=*" %%i IN ('docker ps -aq') DO (
-    docker rm -f %%i >nul 2>&1
-)
+docker rm -f kea-custom 2>nul
 
 echo.
 echo Running Kea Docker container on Windows...

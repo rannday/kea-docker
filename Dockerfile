@@ -1,25 +1,25 @@
-FROM debian:bookworm
+FROM debian:bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system deps
 RUN apt-get update && apt-get install -y \
-    curl gnupg lsb-release wget ca-certificates gnupg2 apt-transport-https \
-    systemd \
-    && rm -rf /var/lib/apt/lists/*
+  curl wget ca-certificates gnupg gnupg2 lsb-release apt-transport-https \
+  systemd iproute2 net-tools procps \
+  && rm -rf /var/lib/apt/lists/*
 
 # Add MySQL repo
 RUN wget https://dev.mysql.com/get/mysql-apt-config_0.8.29-1_all.deb && \
-    DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.29-1_all.deb && \
-    apt-get update
+  DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.29-1_all.deb && \
+  apt-get update
 
 # Install MySQL
 RUN apt-get install -y mysql-server
 
 # Add ISC Kea Cloudsmith repo and install Kea
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/isc/kea-2-6/setup.deb.sh' | bash && \
-    apt-get update && \
-    apt-get install -y isc-kea
+  apt-get update && \
+  apt-get install -y isc-kea
 
 # Optional: Expose the Control Agent port
 EXPOSE 8000

@@ -9,8 +9,8 @@ RUN apt-get update && apt-get install -y \
   && rm -rf /var/lib/apt/lists/*
 
 # Add MySQL repo
-RUN wget https://dev.mysql.com/get/mysql-apt-config_0.8.29-1_all.deb && \
-  DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.29-1_all.deb && \
+RUN wget https://dev.mysql.com/get/mysql-apt-config_0.8.36-1_all.deb && \
+  DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.36-1_all.deb && \
   apt-get update
 
 # Install MySQL
@@ -37,23 +37,23 @@ RUN bash -c '\
   chown -R mysql:mysql /var/lib/mysql /var/run/mysqld && \
   mysqld --initialize-insecure --user=mysql && \
   mysqld_safe \
-    --skip-networking \
-    --socket=/var/run/mysqld/mysqld.sock \
-    --log-bin-trust-function-creators=1 \
-    --innodb-flush-log-at-trx-commit=2 \
-    --default-time-zone='+00:00' & \
+  --skip-networking \
+  --socket=/var/run/mysqld/mysqld.sock \
+  --log-bin-trust-function-creators=1 \
+  --innodb-flush-log-at-trx-commit=2 \
+  --default-time-zone='+00:00' & \
   pid=$! && \
   echo "Waiting for MySQL to be ready..." && \
   for i in $(seq 1 30); do \
-    mysqladmin ping --silent && break; \
-    sleep 1; \
+  mysqladmin ping --silent && break; \
+  sleep 1; \
   done && \
   echo "Creating Kea DB and user..." && \
   mysql -e "CREATE DATABASE IF NOT EXISTS kea; CREATE USER IF NOT EXISTS '\''kea'\''@'\''localhost'\'' IDENTIFIED BY '\''kea'\''; GRANT ALL PRIVILEGES ON kea.* TO '\''kea'\''@'\''localhost'\''; FLUSH PRIVILEGES;" && \
   echo "Loading Kea schema manually..." && \
   mysql -ukea -pkea kea < /usr/share/kea/scripts/mysql/dhcpdb_create.mysql && \
   kill $pid && wait $pid || true \
-'
+  '
 
 # Copy entrypoint
 COPY entrypoint.sh /entrypoint.sh

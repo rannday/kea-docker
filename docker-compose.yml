@@ -1,0 +1,82 @@
+services:
+  kea-hosts:
+    build:
+      context: ./kea-hosts
+      dockerfile: Dockerfile
+    container_name: kea-hosts
+    restart: unless-stopped
+    volumes:
+      - kea-hosts:/var/lib/mysql
+    networks:
+      kea_net:
+        ipv4_address: 192.168.69.2
+    ports:
+      - "127.0.0.1:3306:3306"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  kea1:
+    build:
+      context: ./kea1
+      dockerfile: Dockerfile
+    container_name: kea1
+    restart: unless-stopped
+    depends_on:
+      kea-hosts:
+        condition: service_healthy
+    volumes:
+      - ./kea1/kea-dhcp4.conf:/etc/kea/kea-dhcp4.conf:ro
+      - ./kea1/kea-dhcp6.conf:/etc/kea/kea-dhcp6.conf:ro
+      - kea1-pgdata:/var/lib/postgresql
+    networks:
+      kea_net:
+        ipv4_address: 192.168.69.10
+    ports:
+      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:9000:9000"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kea2:
+    build:
+      context: ./kea2
+      dockerfile: Dockerfile
+    container_name: kea2
+    restart: unless-stopped
+    depends_on:
+      kea-hosts:
+        condition: service_healthy
+    volumes:
+      - ./kea2/kea-dhcp4.conf:/etc/kea/kea-dhcp4.conf:ro
+      - ./kea2/kea-dhcp6.conf:/etc/kea/kea-dhcp6.conf:ro
+      - kea2-pgdata:/var/lib/postgresql
+    networks:
+      kea_net:
+        ipv4_address: 192.168.69.11
+    ports:
+      - "127.0.0.1:8001:8001"
+      - "127.0.0.1:9001:9001"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  kea-hosts:
+  kea1-pgdata:
+  kea2-pgdata:
+
+networks:
+  kea_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.69.0/24

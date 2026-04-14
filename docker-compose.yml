@@ -1,4 +1,26 @@
 services:
+  kea-backups:
+    build:
+      context: ./kea-backups
+      dockerfile: Dockerfile
+  container_name: kea-backups
+  restart: unless-stopped
+  volumes:
+    -kea-mysql-backups:/var/lib/mysql
+    -kea-pgsql-backups:/var/lib/postgresql
+  networks:
+    kea_net:
+      ipv4_address: 192.168.69.69
+  ports:
+      - "127.0.0.1:3306:3306"
+      - "127.0.0.1:5432:5432"
+  healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
   kea-hosts:
     build:
       context: ./kea-hosts
@@ -75,7 +97,11 @@ volumes:
   kea1-pgdata:
     name: kea1-pgdata
   kea2-pgdata:
-    name: kea2-pgdata
+    name: kea2-pgdata 
+  kea-mysql-backups
+    name: kea-mysql-backups
+  kea-pgsql-backups
+    name: kea-pgsql-backups
 
 networks:
   kea_net:

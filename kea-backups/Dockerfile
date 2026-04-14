@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y \
   postgresql \
   postgresql-client \
   procps \
+  netcat-openbsd \
   && rm -rf /var/lib/apt/lists/*
 
 RUN printf '%s\n' '[mariadbd]' 'log-bin-trust-function-creators=1' > /etc/mysql/conf.d/kea.cnf

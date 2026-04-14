@@ -71,8 +71,11 @@ services:
 
 volumes:
   kea-hosts:
+    name: kea-hosts
   kea1-pgdata:
+    name: kea1-pgdata
   kea2-pgdata:
+    name: kea2-pgdata
 
 networks:
   kea_net:

@@ -76,6 +76,7 @@ volumes:
 
 networks:
   kea_net:
+    name: kea_net
     driver: bridge
     ipam:
       config:

@@ -1,7 +1,22 @@
 {
+  "files.eol": "\n",
   "cSpell.allowCompoundWords": true,
   "cSpell.words": [
     "pgsql",
-    "pgdata"
+    "pgdata",
+    "mariadbd",
+    "PGBIN",
+    "PGHOST",
+    "PGUSER",
+    "PGDATABASE",
+    "isready",
+    "replpass",
+    "mysqld",
+    "uroot",
+    "prootpass",
+    "libdhcp",
+    "perfmon",
+    "unacked",
+    "dearmor"
   ]
 }

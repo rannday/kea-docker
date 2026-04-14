@@ -13,8 +13,6 @@ RUN apt-get update && apt-get install -y \
   mariadb-client \
   && rm -rf /var/lib/apt/lists/*
 
-RUN printf '%s\n' '[mariadbd]' 'log-bin-trust-function-creators=1' > /etc/mysql/conf.d/kea.cnf
-
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/isc/kea-3-0/gpg.B16C44CD45514C3C.key' \
   | gpg --dearmor -o /usr/share/keyrings/isc-kea-3-0-archive-keyring.gpg
 
@@ -29,6 +27,7 @@ RUN apt-get update && apt-get install -y \
   isc-kea-mysql \
   && rm -rf /var/lib/apt/lists/*
 
+COPY kea.cnf /etc/mysql/conf.d/kea.cnf
 COPY --chmod=755 healthcheck.sh /usr/local/bin/healthcheck.sh
 COPY --chmod=755 entrypoint.sh /usr/local/bin/entrypoint.sh
 

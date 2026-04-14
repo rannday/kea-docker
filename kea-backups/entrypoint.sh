@@ -2,26 +2,30 @@
 set -eu
 
 # MariaDB replica source
-MYSQL_PRIMARY_HOST="kea-hosts"
+MYSQL_PRIMARY_HOST="192.168.69.2"
 MYSQL_PRIMARY_PORT="3306"
 MYSQL_ROOT_PASSWORD="rootpass"
 MYSQL_REPL_USER="repl"
 MYSQL_REPL_PASSWORD="replpass"
+MYSQL_DUMP_USER="backup"
+MYSQL_DUMP_PASSWORD="backuppass"
+MYSQL_PRIMARY_DB="kea-hosts"
 
 # Local MariaDB
 MYSQL_DATADIR="/var/lib/mysql"
 MYSQL_RUN_DIR="/run/mysqld"
 MYSQL_SOCKET="${MYSQL_RUN_DIR}/mysqld.sock"
 MYSQL_PIDFILE="${MYSQL_RUN_DIR}/mysqld.pid"
+MYSQL_MASTER_LOG_FILE=""
+MYSQL_MASTER_LOG_POS=""
 
 # PostgreSQL replica source
 # A single standby can follow only one upstream cluster.
 # Defaulting to kea1 here.
-PG_PRIMARY_HOST="kea1"
+PG_PRIMARY_HOST="192.168.69.10"
 PG_PRIMARY_PORT="5432"
 PG_PRIMARY_USER="repl"
 PG_PRIMARY_PASSWORD="replpass"
-PGDATABASE="kea_leases"
 
 # Local PostgreSQL
 PGDATA="/var/lib/postgresql/data"
@@ -76,6 +80,10 @@ wait_for_host_port() {
     fi
     sleep 1
   done
+}
+
+mysql_run() {
+  mariadb --protocol=socket --socket="${MYSQL_SOCKET}" -uroot -p"${MYSQL_ROOT_PASSWORD}"
 }
 
 init_mysql_datadir() {
@@ -149,8 +157,78 @@ FLUSH PRIVILEGES;
 SQL
 }
 
+mysql_replica_status() {
+  status="$(mysql_root_exec -e "SHOW REPLICA STATUS\\G" 2>/dev/null || true)"
+  if [ -n "${status}" ]; then
+    printf '%s\n' "${status}"
+    return 0
+  fi
+
+  mysql_root_exec -e "SHOW SLAVE STATUS\\G" 2>/dev/null || true
+}
+
 mysql_replica_already_configured() {
-  mysql_root_exec -Nse "SHOW REPLICA STATUS\\G" 2>/dev/null | grep -q "Source_Host: ${MYSQL_PRIMARY_HOST}"
+  status="$(mysql_replica_status)"
+  printf '%s\n' "${status}" | grep -Eq "^[[:space:]]*(Source_Host|Master_Host):[[:space:]]*${MYSQL_PRIMARY_HOST}$"
+}
+
+mysql_stop_replica() {
+  mysql_root_exec -e "STOP REPLICA;" >/dev/null 2>&1 || mysql_root_exec -e "STOP SLAVE;" >/dev/null 2>&1 || true
+}
+
+mysql_start_replica() {
+  mysql_root_exec -e "START REPLICA;" >/dev/null 2>&1 || mysql_root_exec -e "START SLAVE;" >/dev/null 2>&1
+}
+
+mysql_reset_replica() {
+  mysql_root_exec -e "RESET REPLICA ALL;" >/dev/null 2>&1 || mysql_root_exec -e "RESET SLAVE ALL;" >/dev/null 2>&1
+}
+
+seed_mysql_replica() {
+  echo "[entrypoint] seeding MariaDB replica from primary"
+
+  dump_file="$(mktemp)"
+
+  mariadb-dump \
+    -h "${MYSQL_PRIMARY_HOST}" \
+    -P "${MYSQL_PRIMARY_PORT}" \
+    -u "${MYSQL_DUMP_USER}" \
+    -p"${MYSQL_DUMP_PASSWORD}" \
+    --databases "${MYSQL_PRIMARY_DB}" \
+    --single-transaction \
+    --master-data=2 \
+    --routines \
+    --events \
+    --triggers \
+    > "${dump_file}"
+
+  master_line="$(grep -m1 '^-- CHANGE MASTER TO ' "${dump_file}" || true)"
+  if [ -z "${master_line}" ]; then
+    echo "[entrypoint] could not find CHANGE MASTER coordinates in dump"
+    rm -f "${dump_file}"
+    exit 1
+  fi
+
+  master_log_file="$(printf '%s\n' "${master_line}" | sed -n "s/.*MASTER_LOG_FILE='\([^']*\)'.*/\1/p")"
+  master_log_pos="$(printf '%s\n' "${master_line}" | sed -n "s/.*MASTER_LOG_POS=\([0-9][0-9]*\).*/\1/p")"
+
+  if [ -z "${master_log_file}" ] || [ -z "${master_log_pos}" ]; then
+    echo "[entrypoint] could not parse binlog coordinates from dump"
+    rm -f "${dump_file}"
+    exit 1
+  fi
+
+  mysql_stop_replica
+  mysql_reset_replica
+  mysql_root_exec -e "SET GLOBAL read_only=OFF;"
+  mysql_root_exec -e "DROP DATABASE IF EXISTS \`${MYSQL_PRIMARY_DB}\`;"
+  mysql_run < "${dump_file}"
+  mysql_root_exec -e "SET GLOBAL read_only=ON;"
+
+  MYSQL_MASTER_LOG_FILE="${master_log_file}"
+  MYSQL_MASTER_LOG_POS="${master_log_pos}"
+
+  rm -f "${dump_file}"
 }
 
 configure_mysql_replica() {
@@ -161,17 +239,21 @@ configure_mysql_replica() {
     return
   fi
 
+  seed_mysql_replica
+
+  mysql_stop_replica
+  mysql_reset_replica
   mysql_root_exec_stdin <<SQL
-STOP REPLICA;
-RESET REPLICA ALL;
 CHANGE MASTER TO
   MASTER_HOST='${MYSQL_PRIMARY_HOST}',
   MASTER_PORT=${MYSQL_PRIMARY_PORT},
   MASTER_USER='${MYSQL_REPL_USER}',
   MASTER_PASSWORD='${MYSQL_REPL_PASSWORD}',
-  MASTER_USE_GTID=slave_pos;
-START REPLICA;
+  MASTER_LOG_FILE='${MYSQL_MASTER_LOG_FILE}',
+  MASTER_LOG_POS=${MYSQL_MASTER_LOG_POS};
 SQL
+
+  mysql_start_replica
 }
 
 wait_mysql_replica() {
@@ -179,10 +261,10 @@ wait_mysql_replica() {
 
   i=0
   while :; do
-    status="$(mysql_root_exec -Nse "SHOW REPLICA STATUS\\G" 2>/dev/null || true)"
+    status="$(mysql_replica_status)"
 
-    io_running="$(printf '%s\n' "${status}" | awk -F': ' '/Replica_IO_Running/ {print $2}')"
-    sql_running="$(printf '%s\n' "${status}" | awk -F': ' '/Replica_SQL_Running/ {print $2}')"
+    io_running="$(printf '%s\n' "${status}" | sed -n 's/^[[:space:]]*\(Replica_IO_Running\|Slave_IO_Running\):[[:space:]]*//p' | head -n 1)"
+    sql_running="$(printf '%s\n' "${status}" | sed -n 's/^[[:space:]]*\(Replica_SQL_Running\|Slave_SQL_Running\):[[:space:]]*//p' | head -n 1)"
 
     if [ "${io_running}" = "Yes" ] && [ "${sql_running}" = "Yes" ]; then
       echo "[entrypoint] MariaDB replication is running"
@@ -219,6 +301,7 @@ init_postgres_standby() {
   rm -rf "${PGDATA}"
   mkdir -p "${PGDATA}"
   chown -R postgres:postgres "${PGDATA}"
+  chmod 700 "${PGDATA}"
 
   export PGPASSWORD="${PG_PRIMARY_PASSWORD}"
 
@@ -238,7 +321,9 @@ init_postgres_standby() {
 start_postgres() {
   echo "[entrypoint] starting PostgreSQL standby"
 
-  su -s /bin/sh postgres -c "${PGBIN}/pg_ctl -D '${PGDATA}' -o '-c port=${PGPORT} -c listen_addresses=0.0.0.0' -w start >/dev/null"
+  chown -R postgres:postgres "${PGDATA}"
+  chmod 700 "${PGDATA}"
+  su -s /bin/sh postgres -c "${PGBIN}/pg_ctl -D '${PGDATA}' -o '-c port=${PGPORT} -c listen_addresses=0.0.0.0' -w start"
   PG_READY=1
 }
 
@@ -246,7 +331,7 @@ wait_postgres() {
   echo "[entrypoint] waiting for PostgreSQL standby"
 
   i=0
-  until pg_isready -h 127.0.0.1 -p "${PGPORT}" >/dev/null 2>&1; do
+  until pg_isready -h 127.0.0.1 -p "${PGPORT}" -U postgres -d postgres >/dev/null 2>&1; do
     i=$((i + 1))
     if [ "${i}" -ge 60 ]; then
       echo "[entrypoint] PostgreSQL did not become ready"
@@ -288,7 +373,7 @@ main_loop() {
       return 1
     fi
 
-    if ! pg_isready -h 127.0.0.1 -p "${PGPORT}" >/dev/null 2>&1; then
+    if ! pg_isready -h 127.0.0.1 -p "${PGPORT}" -U postgres -d postgres >/dev/null 2>&1; then
       echo "[entrypoint] PostgreSQL health check failed"
       return 1
     fi

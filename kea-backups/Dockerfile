@@ -17,9 +17,8 @@ RUN apt-get update && apt-get install -y \
   netcat-openbsd \
   && rm -rf /var/lib/apt/lists/*
 
-RUN printf '%s\n' '[mariadbd]' 'log-bin-trust-function-creators=1' > /etc/mysql/conf.d/kea.cnf
-
 COPY --chmod=755 healthcheck.sh /usr/local/bin/healthcheck.sh
+COPY kea.cnf /etc/mysql/conf.d/kea.cnf
 COPY --chmod=755 entrypoint.sh /usr/local/bin/entrypoint.sh
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

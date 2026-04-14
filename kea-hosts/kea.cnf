@@ -1,5 +1,6 @@
 [mariadbd]
 server-id=1
 log-bin=mysql-bin
+binlog_format=ROW
 bind-address=0.0.0.0
 log-bin-trust-function-creators=1

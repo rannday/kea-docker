@@ -34,6 +34,8 @@ RUN apt-get update && apt-get install -y \
 
 RUN mkdir -p /etc/kea /var/lib/kea /var/log/kea /var/run/postgresql
 
+COPY postgresql.conf /usr/local/share/kea/postgresql.conf
+COPY pg_hba.conf /usr/local/share/kea/pg_hba.conf
 COPY --chmod=755 healthcheck.sh /usr/local/bin/healthcheck.sh
 COPY --chmod=755 entrypoint.sh /usr/local/bin/entrypoint.sh
 

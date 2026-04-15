@@ -33,6 +33,11 @@ find_postgres_bin() {
 
 PGBIN="$(find_postgres_bin)"
 
+load_nftables() {
+  echo "[entrypoint] loading nftables rules"
+  nft -f /etc/nftables.conf
+}
+
 cleanup() {
   su -s /bin/sh postgres -c "${PGBIN}/pg_ctl -D '${PGDATA}' -m fast stop >/dev/null" 2>/dev/null || true
 }
@@ -143,6 +148,7 @@ main_loop() {
 }
 
 echo "[entrypoint] starting shared PostgreSQL setup"
+load_nftables
 start_postgres
 wait_postgres
 setup_postgres_db

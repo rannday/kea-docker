@@ -36,6 +36,11 @@ find_postgres_bin() {
 
 PGBIN="$(find_postgres_bin)"
 
+load_nftables() {
+  echo "[entrypoint] loading nftables rules"
+  nft -f /etc/nftables.conf
+}
+
 cleanup() {
   if [ "${PG_LEASE_READY}" = "1" ]; then
     su -s /bin/sh postgres -c "${PGBIN}/pg_ctl -D '${PG_LEASE_DATA}' -m fast stop >/dev/null" 2>/dev/null || true
@@ -178,6 +183,7 @@ main_loop() {
 
 echo "[entrypoint] starting PostgreSQL backup setup"
 
+load_nftables
 wait_for_host_port "${PG_LEASE_PRIMARY_HOST}" "${PG_LEASE_PRIMARY_PORT}" "PostgreSQL lease primary"
 wait_for_host_port "${PG_SHARED_PRIMARY_HOST}" "${PG_SHARED_PRIMARY_PORT}" "PostgreSQL shared primary"
 

@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
   debian-keyring \
   debian-archive-keyring \
   apt-transport-https \
+  nftables \
   postgresql \
   postgresql-client \
   procps \

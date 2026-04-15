@@ -48,6 +48,11 @@ find_postgres_bin() {
 
 PGBIN="$(find_postgres_bin)"
 
+load_nftables() {
+  echo "[entrypoint] loading nftables rules"
+  nft -f /etc/nftables.conf
+}
+
 start_postgres() {
   echo "[entrypoint] preparing postgres"
 
@@ -162,6 +167,7 @@ trap '
   exit 0
 ' INT TERM
 
+load_nftables
 start_postgres
 wait_postgres
 setup_postgres_db

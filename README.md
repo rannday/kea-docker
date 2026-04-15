@@ -26,3 +26,32 @@ docker compose down --volumes --remove-orphans
 ```bash
 docker builder prune -a
 ```
+## Check Status
+### DHCP4 Status
+```bash
+curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"status-get"}' http://127.0.0.1:8000/
+```
+```bash
+curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"status-get"}' http://127.0.0.1:8001/
+```
+#### HA Heartbeat
+```bash
+curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"ha-heartbeat"}' http://127.0.0.1:8000/
+```
+```bash
+curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"ha-heartbeat"}' http://127.0.0.1:8001/
+```
+### DHCP6 Status
+```bash
+curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"status-get"}' http://127.0.0.1:9000/
+```
+```bash
+curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"status-get"}' http://127.0.0.1:9001/
+```
+#### HA Heartbeat
+```bash
+curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"ha-heartbeat"}' http://127.0.0.1:9000/
+```
+```bash
+curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"ha-heartbeat"}' http://127.0.0.1:9001/
+```

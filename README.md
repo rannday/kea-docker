@@ -23,6 +23,14 @@ docker builder prune -a -f
 ```
 # Stork
 - https://kea.readthedocs.io/en/stable/arm/stork.html
+
+Use admin/admin for credentials  
+## Stork Dashboard
+- http://127.0.0.1:8080
+## Grafana Dashboard
+- http://127.0.0.1:3000
+## Prometheus Dashboard
+- http://127.0.0.1:9090
 # API
 [API Reference](https://kea.readthedocs.io/en/stable/api.html)
 - Primary Kea Server

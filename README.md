@@ -3,7 +3,7 @@ Primary and secondary [ISC Kea](https://www.isc.org/kea/) DHCP servers in a load
 
 Each servers stores leases in their own local [PostgreSQL](https://www.postgresql.org/) database, which Kea syncs via HA logic, and each server uses an external PostgreSQL database for host table entries as well as forensic logging.  
 
-The primary Kea server's lease database as well as the external hosts/logs database are replicated/backed-up to a fourth instance running PostgreSQL with multiple clusters, one for each database (leases & hosts/logs).
+The primary Kea server’s lease database and the external hosts/logs database are each replicated to a fourth PostgreSQL instance, which runs two separate clusters acting as streaming standbys—one for the lease data and one for the shared hosts/logs data.
 
 ## Bring containers up
 ```bash

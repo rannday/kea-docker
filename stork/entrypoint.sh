@@ -77,6 +77,10 @@ prepare_dashboards() {
   echo "[entrypoint] preparing Grafana dashboards"
   mkdir -p /var/lib/grafana/dashboards
 
+  if [ -d /usr/local/share/grafana/dashboards ]; then
+    find /usr/local/share/grafana/dashboards -maxdepth 1 -type f -name '*.json' -exec cp {} /var/lib/grafana/dashboards/ \;
+  fi
+
   if [ -d /usr/share/stork/grafana ]; then
     find /usr/share/stork/grafana -maxdepth 1 -type f -name '*.json' -exec cp {} /var/lib/grafana/dashboards/ \;
   fi

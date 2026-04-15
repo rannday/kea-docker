@@ -50,6 +50,7 @@ RUN mkdir -p \
   /var/lib/grafana \
   /var/log/grafana \
   /var/lib/grafana/dashboards \
+  /usr/local/share/grafana/dashboards \
   /etc/grafana/provisioning/datasources \
   /etc/grafana/provisioning/dashboards \
   /usr/lib/stork-server/hooks \
@@ -60,6 +61,7 @@ COPY prometheus.yml /etc/prometheus/prometheus.yml
 COPY grafana.ini /etc/grafana/grafana.ini
 COPY provisioning/datasources/prometheus.yml /etc/grafana/provisioning/datasources/prometheus.yml
 COPY provisioning/dashboards/dashboards.yml /etc/grafana/provisioning/dashboards/dashboards.yml
+COPY dashboards/kea-stork-overview.json /usr/local/share/grafana/dashboards/kea-stork-overview.json
 COPY --chmod=755 healthcheck.sh /usr/local/bin/healthcheck.sh
 COPY --chmod=755 entrypoint.sh /usr/local/bin/entrypoint.sh
 

@@ -11,11 +11,20 @@ PGUSER="kea"
 PGPASSWORD="keapass"
 PGDATABASE="kea_leases"
 PG_TEMPLATE_DIR="/usr/local/share/kea"
+STORK_AGENT_ENV_FILE="/etc/stork/agent.env"
+STORK_AGENT_HOST="192.168.69.11"
+STORK_AGENT_PORT="8080"
+STORK_AGENT_SERVER_URL="http://192.168.69.100:8080"
+STORK_AGENT_PROMETHEUS_KEA_EXPORTER_ADDRESS="0.0.0.0"
+STORK_AGENT_PROMETHEUS_KEA_EXPORTER_PORT="9547"
+STORK_AGENT_PROMETHEUS_KEA_EXPORTER_INTERVAL="10"
+STORK_AGENT_PROMETHEUS_KEA_EXPORTER_PER_SUBNET_STATS="false"
 
 export PGPASSWORD
 
 DHCP4_PID=""
 DHCP6_PID=""
+STORK_AGENT_PID=""
 
 find_postgres_bin() {
   if command -v postgres >/dev/null 2>&1; then
@@ -100,7 +109,34 @@ validate_configs() {
   kea-dhcp6 -t "${DHCP6_FILE}"
 }
 
+write_stork_agent_config() {
+  echo "[entrypoint] writing Stork agent configuration"
+
+  mkdir -p /etc/stork /var/lib/stork-agent /usr/lib/stork-agent/hooks
+
+  cat > "${STORK_AGENT_ENV_FILE}" <<EOF
+STORK_AGENT_SERVER_URL=${STORK_AGENT_SERVER_URL}
+STORK_AGENT_HOST=${STORK_AGENT_HOST}
+STORK_AGENT_PORT=${STORK_AGENT_PORT}
+STORK_AGENT_PROMETHEUS_KEA_EXPORTER_ADDRESS=${STORK_AGENT_PROMETHEUS_KEA_EXPORTER_ADDRESS}
+STORK_AGENT_PROMETHEUS_KEA_EXPORTER_PORT=${STORK_AGENT_PROMETHEUS_KEA_EXPORTER_PORT}
+STORK_AGENT_PROMETHEUS_KEA_EXPORTER_INTERVAL=${STORK_AGENT_PROMETHEUS_KEA_EXPORTER_INTERVAL}
+STORK_AGENT_PROMETHEUS_KEA_EXPORTER_PER_SUBNET_STATS=${STORK_AGENT_PROMETHEUS_KEA_EXPORTER_PER_SUBNET_STATS}
+STORK_LOG_LEVEL=INFO
+EOF
+}
+
+start_stork_agent() {
+  echo "[entrypoint] starting stork-agent"
+  stork-agent --use-env-file &
+  STORK_AGENT_PID=$!
+}
+
 stop_services() {
+  if [ -n "${STORK_AGENT_PID}" ]; then
+    kill "${STORK_AGENT_PID}" 2>/dev/null || true
+  fi
+
   if [ -n "${DHCP4_PID}" ]; then
     kill "${DHCP4_PID}" 2>/dev/null || true
   fi
@@ -125,6 +161,7 @@ setup_postgres_db
 init_pgsql_v4
 init_pgsql_v6
 validate_configs
+write_stork_agent_config
 
 echo "[entrypoint] starting kea-dhcp4"
 kea-dhcp4 -c "${DHCP4_FILE}" &
@@ -134,6 +171,8 @@ echo "[entrypoint] starting kea-dhcp6"
 kea-dhcp6 -c "${DHCP6_FILE}" &
 DHCP6_PID=$!
 
+start_stork_agent
+
 while :; do
   if ! kill -0 "${DHCP4_PID}" 2>/dev/null; then
     echo "[entrypoint] kea-dhcp4 exited"
@@ -142,6 +181,11 @@ while :; do
 
   if ! kill -0 "${DHCP6_PID}" 2>/dev/null; then
     echo "[entrypoint] kea-dhcp6 exited"
+    break
+  fi
+
+  if ! kill -0 "${STORK_AGENT_PID}" 2>/dev/null; then
+    echo "[entrypoint] stork-agent exited"
     break
   fi
 

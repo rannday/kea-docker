@@ -34,6 +34,7 @@ services:
       - ./dhcp1/kea-dhcp6.conf:/etc/kea/kea-dhcp6.conf:ro
       - ./.logs/dhcp1:/var/log/kea
       - dhcp1:/var/lib/postgresql
+      - dhcp1_stork:/var/lib/stork-agent
     networks:
       net:
         ipv4_address: 192.168.69.10
@@ -61,6 +62,7 @@ services:
       - ./dhcp2/kea-dhcp6.conf:/etc/kea/kea-dhcp6.conf:ro
       - ./.logs/dhcp2:/var/log/kea
       - dhcp2:/var/lib/postgresql
+      - dhcp2_stork:/var/lib/stork-agent
     networks:
       net:
         ipv4_address: 192.168.69.11
@@ -92,7 +94,32 @@ services:
     networks:
       net:
         ipv4_address: 192.168.69.69
-    ports: []
+    healthcheck:
+        test: ["CMD", "/usr/local/bin/healthcheck.sh"]
+        interval: 10s
+        timeout: 5s
+        retries: 10
+        start_period: 20s
+
+  stork:
+    image: stork
+    build:
+      context: ./stork
+      dockerfile: Dockerfile
+    container_name: stork
+    restart: unless-stopped
+    volumes:
+      - stork:/var/lib/stork
+      - stork_db:/var/lib/postgresql
+      - prometheus:/var/lib/prometheus
+      - grafana:/var/lib/grafana
+    networks:
+      net:
+        ipv4_address: 192.168.69.100
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:9090:9090"
+      - "127.0.0.1:3000:3000"
     healthcheck:
         test: ["CMD", "/usr/local/bin/healthcheck.sh"]
         interval: 10s
@@ -105,10 +132,22 @@ volumes:
     name: database
   dhcp1:
     name: dhcp1
+  dhcp1_stork:
+    name: dhcp1_stork
   dhcp2:
     name: dhcp2
+  dhcp2_stork:
+    name: dhcp2_stork
   backups:
     name: backups
+  stork:
+    name: stork
+  stork_db:
+    name: stork_db
+  prometheus:
+    name: prometheus
+  grafana:
+    name: grafana
 
 networks:
   net:

@@ -48,14 +48,6 @@ curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"
 ```bash
 curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"ha-heartbeat"}' http://127.0.0.1:8100/
 ```
-# Stork
-- Stork UI: http://127.0.0.1:8080
-- Prometheus: http://127.0.0.1:9090
-- Grafana: http://127.0.0.1:3000
-- Stork creates a default administrator account with username `admin` and password `admin`
-- The `dhcp1` and `dhcp2` containers now start `stork-agent` automatically and submit agent-token registration requests to Stork
-- After the first `docker compose up -d --build`, sign in to Stork and approve both machines from `Services -> Machines -> Unauthorized`
-- Grafana is pre-provisioned with the local Prometheus instance; if the Stork package ships dashboard JSON templates in `/usr/share/stork/grafana`, they are imported automatically at container startup
 # PostgreSQL
 - https://kea.readthedocs.io/en/stable/arm/admin.html#pgsql-database-create
 # Logging

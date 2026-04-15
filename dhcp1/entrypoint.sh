@@ -5,11 +5,15 @@ DHCP4_FILE="/etc/kea/kea-dhcp4.conf"
 DHCP6_FILE="/etc/kea/kea-dhcp6.conf"
 
 PGHOST="127.0.0.1"
+PG_LISTEN_ADDRESSES="0.0.0.0"
 PGPORT="5432"
 PGDATA="/var/lib/postgresql/data"
 PGUSER="kea"
 PGPASSWORD="keapass"
-PGDATABASE="kea_db"
+PGDATABASE="kea_leases"
+PG_REPL_USER="repl"
+PG_REPL_PASSWORD="replpass"
+PG_TEMPLATE_DIR="/usr/local/share/kea"
 
 export PGPASSWORD
 
@@ -47,8 +51,12 @@ start_postgres() {
     su -s /bin/sh postgres -c "${PGBIN}/initdb -D '${PGDATA}' >/dev/null"
   fi
 
+  cp "${PG_TEMPLATE_DIR}/postgresql.conf" "${PGDATA}/postgresql.conf"
+  cp "${PG_TEMPLATE_DIR}/pg_hba.conf" "${PGDATA}/pg_hba.conf"
+  chown postgres:postgres "${PGDATA}/postgresql.conf" "${PGDATA}/pg_hba.conf"
+
   echo "[entrypoint] starting postgres"
-  su -s /bin/sh postgres -c "${PGBIN}/pg_ctl -D '${PGDATA}' -o '-c listen_addresses=${PGHOST} -p ${PGPORT}' -w start >/dev/null"
+  su -s /bin/sh postgres -c "${PGBIN}/pg_ctl -D '${PGDATA}' -o '-c listen_addresses=${PG_LISTEN_ADDRESSES} -p ${PGPORT}' -w start >/dev/null"
 }
 
 wait_postgres() {
@@ -63,6 +71,9 @@ setup_postgres_db() {
 
   su -s /bin/sh postgres -c "psql -v ON_ERROR_STOP=1 -h '${PGHOST}' -p '${PGPORT}' -tAc \"SELECT 1 FROM pg_roles WHERE rolname='${PGUSER}'\"" | grep -q 1 || \
     su -s /bin/sh postgres -c "psql -v ON_ERROR_STOP=1 -h '${PGHOST}' -p '${PGPORT}' postgres -c \"CREATE ROLE ${PGUSER} LOGIN PASSWORD '${PGPASSWORD}'\""
+
+  su -s /bin/sh postgres -c "psql -v ON_ERROR_STOP=1 -h '${PGHOST}' -p '${PGPORT}' -tAc \"SELECT 1 FROM pg_roles WHERE rolname='${PG_REPL_USER}'\"" | grep -q 1 || \
+    su -s /bin/sh postgres -c "psql -v ON_ERROR_STOP=1 -h '${PGHOST}' -p '${PGPORT}' postgres -c \"CREATE ROLE ${PG_REPL_USER} WITH LOGIN REPLICATION PASSWORD '${PG_REPL_PASSWORD}'\""
 
   su -s /bin/sh postgres -c "psql -v ON_ERROR_STOP=1 -h '${PGHOST}' -p '${PGPORT}' -tAc \"SELECT 1 FROM pg_database WHERE datname='${PGDATABASE}'\"" | grep -q 1 || \
     su -s /bin/sh postgres -c "psql -v ON_ERROR_STOP=1 -h '${PGHOST}' -p '${PGPORT}' postgres -c \"CREATE DATABASE ${PGDATABASE} OWNER ${PGUSER}\""

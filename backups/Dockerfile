@@ -9,8 +9,6 @@ RUN apt-get update && apt-get install -y \
   debian-keyring \
   debian-archive-keyring \
   apt-transport-https \
-  mariadb-server \
-  mariadb-client \
   postgresql \
   postgresql-client \
   procps \
@@ -18,7 +16,6 @@ RUN apt-get update && apt-get install -y \
   && rm -rf /var/lib/apt/lists/*
 
 COPY --chmod=755 healthcheck.sh /usr/local/bin/healthcheck.sh
-COPY kea.cnf /etc/mysql/conf.d/kea.cnf
 COPY --chmod=755 entrypoint.sh /usr/local/bin/entrypoint.sh
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

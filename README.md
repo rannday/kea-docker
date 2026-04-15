@@ -1,14 +1,14 @@
 # Kea Docker
-Goal - Two ISC Kea instances in a load balancing HA pair using a PostgreSQL  
-lease database backend, along with a separate MySQL hosts database backend,  
-and a final instance with both PostgreSQL and MySQL for database backups.  
+Primary and secondary [ISC Kea](https://www.isc.org/kea/) DHCP servers in a  
+load balancing high availability pair.  
 
-Our billing/provisioning system for our cable modem plant requires MySQL.  
+Each servers stores leases in their own local [PostgreSQL](https://www.postgresql.org/)  
+database, which Kea syncs via HA logic, and each server uses an external  
+PostgreSQL database for host table entries as well as forensic logging.  
 
-**This is not something you can spin up and server DHCP with. It's mainly for  
-testing, especially future integration tests for a web app I'm making. It's  
-also meant to be used as a proof-of-concept for our future production  
-ISC Kea servers.**
+The primary Kea server's lease database as well as the external hosts/logs  
+database are replicated/backed-up to a fourth instance running PostgreSQL with  
+multiple clusters, one for each database (leases & hosts/logs).
 
 ## Bring containers up
 ```bash
@@ -24,25 +24,29 @@ docker compose down --volumes --remove-orphans
 ```
 ## Clear cache
 ```bash
-docker builder prune -a
+docker builder prune -a -f
 ```
 # API
 [API Reference](https://kea.readthedocs.io/en/stable/api.html)
 - Primary Kea Server
-  - DHCP4: Port 8000
-  - DHCP6: Port 9000
+  - DHCP4: Port 8100
+  - DHCP6: Port 8101
 - Secondary Kea Server
-  - DHCP4: Port 8001
-  - DHCP6: Port 9001
+  - DHCP4: Port 8200
+  - DHCP6: Port 8201
 Replace port number to query the other servers
 ## Status
 ```bash
-curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"status-get"}' http://127.0.0.1:8000/
+curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"status-get"}' http://127.0.0.1:8100/
 ```
 ## Heartbeat
 ```bash
-curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"ha-heartbeat"}' http://127.0.0.1:8000/
+curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"ha-heartbeat"}' http://127.0.0.1:8100/
 ```
+# PostgreSQL
+- https://kea.readthedocs.io/en/stable/arm/admin.html#pgsql-database-create
+# Logging
+- https://kea.readthedocs.io/en/stable/arm/logging.html
 # Hooks
 [Available Libraries](https://kea.readthedocs.io/en/stable/arm/hooks.html#available-hook-libraries)
 ## Included
@@ -51,13 +55,16 @@ curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"
 - https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-legal-log
   - https://kea.readthedocs.io/en/stable/arm/hooks.html#forensic-log-configuration
 - https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-high-availability
+  - https://kea.readthedocs.io/en/stable/arm/hooks.html#load-balancing-configuration
+  - If multithreading is enabled, use different internal ports for HA
+  - If multithreading is disabled, use the control socket port
 - https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-host-cmds
 - https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-lease-cmds
+  - https://kea.readthedocs.io/en/stable/arm/hooks.html#binding-variables
 - https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-lease-query
+  - https://kea.readthedocs.io/en/stable/arm/hooks.html#dhcpv4-leasequery-configuration
 - https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-limits
-- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-mysql
 - https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-perfmon
-- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-ping-check
 - https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-pgsql
 - https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-stat-cmds
 - https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-subnet-cmds

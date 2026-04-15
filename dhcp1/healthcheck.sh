@@ -20,18 +20,18 @@ check_pg() {
   kea-admin db-version pgsql \
     -u kea \
     -p keapass \
-    -n kea_db \
+    -n kea_leases \
     -h 127.0.0.1 \
     -4 >/dev/null 2>&1
 
   kea-admin db-version pgsql \
     -u kea \
     -p keapass \
-    -n kea_db \
+    -n kea_leases \
     -h 127.0.0.1 \
     -6 >/dev/null 2>&1
 }
 
 check_pg
 check_http 8000
-check_http 9000
+check_http 8001

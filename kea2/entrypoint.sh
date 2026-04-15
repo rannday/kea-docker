@@ -9,7 +9,7 @@ PGPORT="5432"
 PGDATA="/var/lib/postgresql/data"
 PGUSER="kea"
 PGPASSWORD="keapass"
-PGDATABASE="kea_leases"
+PGDATABASE="kea_db"
 
 export PGPASSWORD
 

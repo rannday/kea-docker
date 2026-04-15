@@ -9,7 +9,7 @@ MYSQL_REPL_USER="repl"
 MYSQL_REPL_PASSWORD="replpass"
 MYSQL_DUMP_USER="backup"
 MYSQL_DUMP_PASSWORD="backuppass"
-MYSQL_PRIMARY_DB="kea-hosts"
+MYSQL_PRIMARY_DB="kea_hosts"
 
 # Local MariaDB
 MYSQL_DATADIR="/var/lib/mysql"

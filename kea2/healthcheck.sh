@@ -20,14 +20,14 @@ check_pg() {
   kea-admin db-version pgsql \
     -u kea \
     -p keapass \
-    -n kea_leases \
+    -n kea_db \
     -h 127.0.0.1 \
     -4 >/dev/null 2>&1
 
   kea-admin db-version pgsql \
     -u kea \
     -p keapass \
-    -n kea_leases \
+    -n kea_db \
     -h 127.0.0.1 \
     -6 >/dev/null 2>&1
 }

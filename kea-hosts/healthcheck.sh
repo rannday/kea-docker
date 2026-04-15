@@ -5,7 +5,7 @@ version="$(
   kea-admin db-version mysql \
     -u kea \
     -p keapass \
-    -n kea-hosts \
+    -n kea_hosts \
     -h 127.0.0.1 2>/dev/null
 )"
 

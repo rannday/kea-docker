@@ -26,32 +26,38 @@ docker compose down --volumes --remove-orphans
 ```bash
 docker builder prune -a
 ```
-## Check Status
-### DHCP4 Status
+# API
+[API Reference](https://kea.readthedocs.io/en/stable/api.html)
+- Primary Kea Server
+  - DHCP4: Port 8000
+  - DHCP6: Port 9000
+- Secondary Kea Server
+  - DHCP4: Port 8001
+  - DHCP6: Port 9001
+Replace port number to query the other servers
+## Status
 ```bash
 curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"status-get"}' http://127.0.0.1:8000/
 ```
-```bash
-curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"status-get"}' http://127.0.0.1:8001/
-```
-#### HA Heartbeat
+## Heartbeat
 ```bash
 curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"ha-heartbeat"}' http://127.0.0.1:8000/
 ```
-```bash
-curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"ha-heartbeat"}' http://127.0.0.1:8001/
-```
-### DHCP6 Status
-```bash
-curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"status-get"}' http://127.0.0.1:9000/
-```
-```bash
-curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"status-get"}' http://127.0.0.1:9001/
-```
-#### HA Heartbeat
-```bash
-curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"ha-heartbeat"}' http://127.0.0.1:9000/
-```
-```bash
-curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"ha-heartbeat"}' http://127.0.0.1:9001/
-```
+# Hooks
+[Available Libraries](https://kea.readthedocs.io/en/stable/arm/hooks.html#available-hook-libraries)
+## Included
+- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-bootp
+- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-class-cmds
+- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-legal-log
+  - https://kea.readthedocs.io/en/stable/arm/hooks.html#forensic-log-configuration
+- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-high-availability
+- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-host-cmds
+- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-lease-cmds
+- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-lease-query
+- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-limits
+- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-mysql
+- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-perfmon
+- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-ping-check
+- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-pgsql
+- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-stat-cmds
+- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-subnet-cmds

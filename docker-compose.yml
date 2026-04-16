@@ -102,6 +102,7 @@ services:
     ports:
       - "127.0.0.1:8100:8000"
       - "127.0.0.1:8101:8001"
+      - "127.0.0.1:8102:8002"
     healthcheck:
       test: ["CMD", "/usr/local/bin/healthcheck.sh"]
       interval: 10s
@@ -137,6 +138,7 @@ services:
     ports:
       - "127.0.0.1:8200:8000"
       - "127.0.0.1:8201:8001"
+      - "127.0.0.1:8202:8002"
     healthcheck:
       test: ["CMD", "/usr/local/bin/healthcheck.sh"]
       interval: 10s

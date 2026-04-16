@@ -41,7 +41,8 @@ load_nftables() {
 cleanup() {
   su -s /bin/sh postgres -c "${PGBIN}/pg_ctl -D '${PGDATA}' -m fast stop >/dev/null" 2>/dev/null || true
 }
-trap cleanup INT TERM
+trap cleanup EXIT
+trap 'exit 0' INT TERM
 
 start_postgres() {
   echo "[entrypoint] preparing PostgreSQL shared DB"

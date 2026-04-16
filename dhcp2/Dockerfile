@@ -12,7 +12,6 @@ RUN apt-get update && apt-get install -y \
   nftables \
   postgresql \
   postgresql-client \
-  procps \
   && rm -rf /var/lib/apt/lists/*
 
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/isc/kea-dev/gpg.98CB594EC0EC6D3A.key' \

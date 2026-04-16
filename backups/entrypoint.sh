@@ -50,7 +50,8 @@ cleanup() {
     su -s /bin/sh postgres -c "${PGBIN}/pg_ctl -D '${PG_SHARED_DATA}' -m fast stop >/dev/null" 2>/dev/null || true
   fi
 }
-trap cleanup INT TERM
+trap cleanup EXIT
+trap 'exit 0' INT TERM
 
 wait_for_host_port() {
   host="$1"

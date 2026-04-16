@@ -1,44 +1,40 @@
 # Kea Docker
 Primary and secondary [ISC Kea](https://www.isc.org/kea/) DHCP servers in a load balancing high availability pair.  
 
+Primary and secondary [ISC BIND9](https://www.isc.org/bind/) DNS servers in a primary and secondary configuration which receive DDNS updates from Kea. 
+
+[ISC Stork](https://www.isc.org/stork/) monitoring server for Kea. As well as as [Grafana](https://grafana.com/) dashboard for observing [Prometheus](https://prometheus.io/) data from Kea and BIND9.
+
 Each servers stores leases in their own local [PostgreSQL](https://www.postgresql.org/) database, which Kea syncs via HA logic, and each server uses an external PostgreSQL database for host table entries as well as forensic logging.  
 
-The primary Kea server’s lease database and the external hosts/logs database are each replicated to a fourth PostgreSQL instance, which runs two separate clusters acting as streaming standbys—one for the lease data and one for the shared hosts/logs data.
+The primary Kea server’s lease database and the external hosts/logs database are each replicated to another PostgreSQL instance, which runs two separate clusters acting as streaming standbys—one for the lease data and one for the shared hosts/logs data.
 
-## Bring containers up
-```bash
-docker compose up -d --build
+## Container Control
+Bring containers up and tear down
+```powershell
+.\scripts\quick-up.ps1
+.\scripts\quick-down.ps1
 ```
-## Tear them down
-```bash
-docker compose down
+Refresh containers
+```powershell
+.\scripts\full-up.ps1
+.\scripts\full-down.ps1
 ```
-## Wipe them
-```bash
-docker compose down --volumes --remove-orphans
-```
-## Clear cache
-```bash
-docker builder prune -a -f
-```
-# Stork
+## Stork
 - https://kea.readthedocs.io/en/stable/arm/stork.html
 
 Use admin/admin for credentials  
-## Stork Dashboard
-- http://127.0.0.1:8080
-## Grafana Dashboard
-- http://127.0.0.1:3000
-## Prometheus Dashboard
-- http://127.0.0.1:9090
-# BIND9
+- Stork Dashboard: http://127.0.0.1:8080
+- Grafana Dashboard: http://127.0.0.1:3000
+- Prometheus Dashboard: http://127.0.0.1:9090
+## BIND9
 - `dns1` is the primary authoritative server for `example.com`
 - `dns2` is the secondary and receives zone transfers from `dns1`
 - Kea DHCPv4 and DHCPv6 now send DDNS updates through the local `kea-dhcp-ddns` daemon to `dns1`
 - DDNS is authenticated with a static TSIG key in this lab stack
 - Prometheus scrapes the BIND exporters on `dns1` and `dns2`, and Grafana includes a `BIND Overview` dashboard
 - The Docker `net` bridge is dual-stack, and each container has a pinned internal IPv4 and IPv6 address
-# API
+## API
 [API Reference](https://kea.readthedocs.io/en/stable/api.html)
 - Primary Kea Server
   - DHCP4: Port 8100
@@ -47,23 +43,24 @@ Use admin/admin for credentials
   - DHCP4: Port 8200
   - DHCP6: Port 8201
 Replace port number to query the other servers
-## Status
+### Status
 ```bash
 curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"status-get"}' http://127.0.0.1:8100/
 ```
-## Heartbeat
+### Heartbeat
 ```bash
 curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"ha-heartbeat"}' http://127.0.0.1:8100/
 ```
-# PostgreSQL
+## PostgreSQL
 - https://kea.readthedocs.io/en/stable/arm/admin.html#pgsql-database-create
-# Logging
+## Logging
 - https://kea.readthedocs.io/en/stable/arm/logging.html
-# Hooks
+## Hooks
 [Available Libraries](https://kea.readthedocs.io/en/stable/arm/hooks.html#available-hook-libraries)
-## Included
+### Included
 - https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-bootp
 - https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-class-cmds
+- https://kea.readthedocs.io/en/stable/arm/hooks.html#libdhcp-ddns-tuning-so-ddns-tuning
 - https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-legal-log
   - https://kea.readthedocs.io/en/stable/arm/hooks.html#forensic-log-configuration
 - https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-high-availability
@@ -81,4 +78,3 @@ curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"
 - https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-ddns-tuning
 - https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-stat-cmds
 - https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-subnet-cmds
-- https://kea.readthedocs.io/en/stable/arm/ddns.html

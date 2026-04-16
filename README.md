@@ -27,21 +27,17 @@ Use admin/admin for credentials
 - Stork Dashboard: http://127.0.0.1:8080
 - Grafana Dashboard: http://127.0.0.1:3000
 - Prometheus Dashboard: http://127.0.0.1:9090
-## BIND9
-- `dns1` is the primary authoritative server for `example.com`
-- `dns2` is the secondary and receives zone transfers from `dns1`
-- Kea DHCPv4 and DHCPv6 now send DDNS updates through the local `kea-dhcp-ddns` daemon to `dns1`
-- DDNS is authenticated with a static TSIG key in this lab stack
-- Prometheus scrapes the BIND exporters on `dns1` and `dns2`, and Grafana includes a `BIND Overview` dashboard
-- The Docker `net` bridge is dual-stack, and each container has a pinned internal IPv4 and IPv6 address
+
 ## API
 [API Reference](https://kea.readthedocs.io/en/stable/api.html)
 - Primary Kea Server
   - DHCP4: Port 8100
   - DHCP6: Port 8101
+  - DDNS: Port 8102
 - Secondary Kea Server
   - DHCP4: Port 8200
   - DHCP6: Port 8201
+  - DDNS: Port 8202    
 Replace port number to query the other servers
 ### Status
 ```bash

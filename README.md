@@ -37,7 +37,9 @@ Use admin/admin for credentials
 - Secondary Kea Server
   - DHCP4: Port 8200
   - DHCP6: Port 8201
-  - DDNS: Port 8202    
+  - DDNS: Port 8202  
+
+
 Replace port number to query the other servers
 ### Status
 ```bash

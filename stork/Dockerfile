@@ -63,6 +63,7 @@ COPY grafana.ini /etc/grafana/grafana.ini
 COPY provisioning/datasources/prometheus.yml /etc/grafana/provisioning/datasources/prometheus.yml
 COPY provisioning/dashboards/dashboards.yml /etc/grafana/provisioning/dashboards/dashboards.yml
 COPY dashboards/kea-stork-overview.json /usr/local/share/grafana/dashboards/kea-stork-overview.json
+COPY dashboards/bind-overview.json /usr/local/share/grafana/dashboards/bind-overview.json
 COPY --chmod=755 healthcheck.sh /usr/local/bin/healthcheck.sh
 COPY --chmod=755 entrypoint.sh /usr/local/bin/entrypoint.sh
 

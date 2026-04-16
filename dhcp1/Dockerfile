@@ -36,6 +36,7 @@ RUN apt-get update && apt-get install -y \
   isc-kea-admin \
   isc-kea-dhcp4 \
   isc-kea-dhcp6 \
+  isc-kea-dhcp-ddns \
   isc-kea-hooks \
   isc-kea-pgsql \
   isc-stork-agent \
@@ -46,7 +47,9 @@ RUN mkdir -p /etc/kea /etc/stork /var/lib/kea /var/lib/stork-agent /var/log/kea 
   && ln -s /var/lib/stork-agent /var/lib/stork
 RUN printf 'kea\n' > /etc/kea/api-user \
   && printf 'keapass\n' > /etc/kea/api-password \
+  && printf 'J7eVnYH4rY8gYz4j5A9LxK2pQm7nS3tVw2yB6cD9fG0=\n' > /etc/kea/kea-ddns.key \
   && chmod 600 /etc/kea/api-user /etc/kea/api-password
+RUN chmod 600 /etc/kea/kea-ddns.key
 
 COPY postgresql.conf /usr/local/share/kea/postgresql.conf
 COPY pg_hba.conf /usr/local/share/kea/pg_hba.conf

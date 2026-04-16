@@ -3,6 +3,7 @@ set -eu
 
 DHCP4_FILE="/etc/kea/kea-dhcp4.conf"
 DHCP6_FILE="/etc/kea/kea-dhcp6.conf"
+DDNS_FILE="/etc/kea/kea-dhcp-ddns.conf"
 
 PGHOST="127.0.0.1"
 PGPORT="5432"
@@ -24,6 +25,7 @@ export PGPASSWORD
 
 DHCP4_PID=""
 DHCP6_PID=""
+DDNS_PID=""
 STORK_AGENT_PID=""
 
 find_postgres_bin() {
@@ -112,6 +114,9 @@ validate_configs() {
 
   echo "[entrypoint] validating ${DHCP6_FILE}"
   kea-dhcp6 -t "${DHCP6_FILE}"
+
+  echo "[entrypoint] validating ${DDNS_FILE}"
+  kea-dhcp-ddns -t "${DDNS_FILE}"
 }
 
 write_stork_agent_config() {
@@ -140,6 +145,10 @@ start_stork_agent() {
 stop_services() {
   if [ -n "${STORK_AGENT_PID}" ]; then
     kill "${STORK_AGENT_PID}" 2>/dev/null || true
+  fi
+
+  if [ -n "${DDNS_PID}" ]; then
+    kill "${DDNS_PID}" 2>/dev/null || true
   fi
 
   if [ -n "${DHCP4_PID}" ]; then
@@ -177,6 +186,10 @@ echo "[entrypoint] starting kea-dhcp6"
 kea-dhcp6 -c "${DHCP6_FILE}" &
 DHCP6_PID=$!
 
+echo "[entrypoint] starting kea-dhcp-ddns"
+kea-dhcp-ddns -c "${DDNS_FILE}" &
+DDNS_PID=$!
+
 start_stork_agent
 
 while :; do
@@ -187,6 +200,11 @@ while :; do
 
   if ! kill -0 "${DHCP6_PID}" 2>/dev/null; then
     echo "[entrypoint] kea-dhcp6 exited"
+    break
+  fi
+
+  if ! kill -0 "${DDNS_PID}" 2>/dev/null; then
+    echo "[entrypoint] kea-dhcp-ddns exited"
     break
   fi
 

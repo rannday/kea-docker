@@ -35,4 +35,5 @@ check_pg() {
 check_pg
 check_http 8000
 check_http 8001
+ps -ef | grep '[k]ea-dhcp-ddns' >/dev/null
 curl -sf http://127.0.0.1:9547/metrics >/dev/null

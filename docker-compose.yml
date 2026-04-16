@@ -1,5 +1,55 @@
 name: kea
 services:
+  dns1:
+    image: dns1
+    build:
+      context: ./dns1
+      dockerfile: Dockerfile
+    container_name: dns1
+    restart: unless-stopped
+    volumes:
+      - ./dns1/named.conf:/etc/bind/named.conf:ro
+      - ./dns1/zones:/usr/local/share/bind/zones:ro
+      - dns1:/var/cache/bind
+    cap_add:
+      - NET_ADMIN
+    networks:
+      net:
+        ipv4_address: 192.168.69.200
+        ipv6_address: fd69:69:69::200
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  dns2:
+    image: dns2
+    build:
+      context: ./dns2
+      dockerfile: Dockerfile
+    container_name: dns2
+    restart: unless-stopped
+    depends_on:
+      dns1:
+        condition: service_healthy
+    volumes:
+      - ./dns2/named.conf:/etc/bind/named.conf:ro
+      - dns2:/var/cache/bind
+    cap_add:
+      - NET_ADMIN
+    networks:
+      net:
+        ipv4_address: 192.168.69.201
+        ipv6_address: fd69:69:69::201
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
   database:
     image: database
     build:
@@ -7,14 +57,15 @@ services:
       dockerfile: Dockerfile
     container_name: database
     restart: unless-stopped
-    cap_add:
-      - NET_ADMIN
     volumes:
       - ./database/nftables.conf:/etc/nftables.conf:ro
       - database:/var/lib/postgresql
+    cap_add:
+      - NET_ADMIN
     networks:
       net:
         ipv4_address: 192.168.69.2
+        ipv6_address: fd69:69:69::2
     healthcheck:
       test: ["CMD", "/usr/local/bin/healthcheck.sh"]
       interval: 10s
@@ -29,21 +80,25 @@ services:
       dockerfile: Dockerfile
     container_name: dhcp1
     restart: unless-stopped
-    cap_add:
-      - NET_ADMIN
     depends_on:
       database:
+        condition: service_healthy
+      dns1:
         condition: service_healthy
     volumes:
       - ./dhcp1/nftables.conf:/etc/nftables.conf:ro
       - ./dhcp1/kea-dhcp4.conf:/etc/kea/kea-dhcp4.conf:ro
       - ./dhcp1/kea-dhcp6.conf:/etc/kea/kea-dhcp6.conf:ro
+      - ./dhcp1/kea-dhcp-ddns.conf:/etc/kea/kea-dhcp-ddns.conf:ro
       - ./.logs/dhcp1:/var/log/kea
       - dhcp1:/var/lib/postgresql
       - dhcp1_stork:/var/lib/stork-agent
+    cap_add:
+      - NET_ADMIN
     networks:
       net:
         ipv4_address: 192.168.69.10
+        ipv6_address: fd69:69:69::10
     ports:
       - "127.0.0.1:8100:8000"
       - "127.0.0.1:8101:8001"
@@ -60,21 +115,25 @@ services:
       dockerfile: Dockerfile
     container_name: dhcp2
     restart: unless-stopped
-    cap_add:
-      - NET_ADMIN
     depends_on:
       database:
+        condition: service_healthy
+      dns1:
         condition: service_healthy
     volumes:
       - ./dhcp2/nftables.conf:/etc/nftables.conf:ro
       - ./dhcp2/kea-dhcp4.conf:/etc/kea/kea-dhcp4.conf:ro
       - ./dhcp2/kea-dhcp6.conf:/etc/kea/kea-dhcp6.conf:ro
+      - ./dhcp2/kea-dhcp-ddns.conf:/etc/kea/kea-dhcp-ddns.conf:ro
       - ./.logs/dhcp2:/var/log/kea
       - dhcp2:/var/lib/postgresql
       - dhcp2_stork:/var/lib/stork-agent
+    cap_add:
+      - NET_ADMIN
     networks:
       net:
         ipv4_address: 192.168.69.11
+        ipv6_address: fd69:69:69::11
     ports:
       - "127.0.0.1:8200:8000"
       - "127.0.0.1:8201:8001"
@@ -91,8 +150,6 @@ services:
       dockerfile: Dockerfile
     container_name: backups
     restart: unless-stopped
-    cap_add:
-      - NET_ADMIN
     depends_on:
       database:
         condition: service_healthy
@@ -103,9 +160,12 @@ services:
     volumes:
       - ./backups/nftables.conf:/etc/nftables.conf:ro
       - backups:/var/lib/postgresql
+    cap_add:
+      - NET_ADMIN
     networks:
       net:
         ipv4_address: 192.168.69.69
+        ipv6_address: fd69:69:69::69
     healthcheck:
         test: ["CMD", "/usr/local/bin/healthcheck.sh"]
         interval: 10s
@@ -120,17 +180,18 @@ services:
       dockerfile: Dockerfile
     container_name: stork
     restart: unless-stopped
-    cap_add:
-      - NET_ADMIN
     volumes:
       - ./stork/nftables.conf:/etc/nftables.conf:ro
       - stork:/var/lib/stork
       - stork_db:/var/lib/postgresql
       - prometheus:/var/lib/prometheus
       - grafana:/var/lib/grafana
+    cap_add:
+      - NET_ADMIN
     networks:
       net:
         ipv4_address: 192.168.69.100
+        ipv6_address: fd69:69:69::100
     ports:
       - "127.0.0.1:8080:8080"
       - "127.0.0.1:9090:9090"
@@ -143,6 +204,10 @@ services:
         start_period: 20s
 
 volumes:
+  dns1:
+    name: dns1
+  dns2:
+    name: dns2
   database:
     name: database
   dhcp1:
@@ -168,6 +233,8 @@ networks:
   net:
     name: net
     driver: bridge
+    enable_ipv6: true
     ipam:
       config:
         - subnet: 192.168.69.0/24
+        - subnet: fd69:69:69::/64

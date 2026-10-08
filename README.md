@@ -1,78 +1,102 @@
 # Kea Docker
-Primary and secondary [ISC Kea](https://www.isc.org/kea/) DHCP servers in a load balancing high availability pair.  
 
-Primary and secondary [ISC BIND9](https://www.isc.org/bind/) DNS servers in a primary and secondary configuration which receive DDNS updates from Kea. 
+Docker Compose lab with Kea DHCP in load balancing HA, primary/secondary BIND9
+with DDNS, and Stork, Prometheus, and Grafana monitoring.
 
-[ISC Stork](https://www.isc.org/stork/) monitoring server for Kea. As well as as [Grafana](https://grafana.com/) dashboard for observing [Prometheus](https://prometheus.io/) data from Kea and BIND9.
+Each DHCP peer has a local PostgreSQL lease database; Kea HA synchronizes leases.
+A shared PostgreSQL database stores host reservations and forensic logs. The
+backups service maintains streaming standbys for the primary peer's leases and
+the shared database.
 
-Each servers stores leases in their own local [PostgreSQL](https://www.postgresql.org/) database, which Kea syncs via HA logic, and each server uses an external PostgreSQL database for host table entries as well as forensic logging.  
+## Start and switch modes
 
-The primary Kea server’s lease database and the external hosts/logs database are each replicated to another PostgreSQL instance, which runs two separate clusters acting as streaming standbys—one for the lease data and one for the shared hosts/logs data.
+The default lab has no active container firewalls:
 
-## Container Control
-Bring containers up and tear down
+```sh
+docker compose -f docker-compose.yml up -d --build --force-recreate
+```
+
+Enable firewalls for all seven services by adding the explicit override:
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.firewall.yml up -d --build --force-recreate
+```
+
+The firewall file is an override, not a standalone stack, and is never selected
+automatically. It adds `NET_ADMIN`, read-only nftables mounts, and
+`ENABLE_FIREWALL: "true"`. Only that exact value enables loading; loading errors
+abort startup.
+
+Both commands preserve the same `kea` project, volumes, network, addresses, and
+ports. Use the desired command to switch modes. Recreating containers discards
+previously loaded namespace firewall rules when disabling firewalls. Rebuilding
+incorporates entrypoint changes copied into the images.
+
+Stop and remove containers while retaining volumes; add the firewall override
+if using that mode:
+
+```sh
+docker compose -f docker-compose.yml down --remove-orphans
+```
+
+## Lifecycle helpers
+
+PowerShell uses `-Firewall`; POSIX shell uses `--firewall`. Omit the flag for
+the default lab. Every helper explicitly selects the appropriate Compose files.
+
+| Helper | Behavior |
+| --- | --- |
+| `quick-up` | Start existing images |
+| `quick-down` | Remove containers and orphans; retain volumes |
+| `full-up` | Build without cache and recreate; retain volumes |
+| `full-down` | **Delete volumes, images, orphan containers, and DHCP log contents** |
+
 ```powershell
 .\scripts\quick-up.ps1
-.\scripts\quick-down.ps1
+.\scripts\quick-up.ps1 -Firewall
+.\scripts\quick-down.ps1 -Firewall
+.\scripts\full-up.ps1 -Firewall
 ```
-Refresh containers
-```powershell
-.\scripts\full-up.ps1
-.\scripts\full-down.ps1
+
+```sh
+sh scripts/quick-up.sh
+sh scripts/quick-up.sh --firewall
+sh scripts/quick-down.sh --firewall
+sh scripts/full-up.sh --firewall
 ```
-## Stork
-- https://kea.readthedocs.io/en/stable/arm/stork.html
 
-Use admin/admin for credentials  
-- Stork Dashboard: http://127.0.0.1:8080
-- Grafana Dashboard: http://127.0.0.1:3000
-- Prometheus Dashboard: http://127.0.0.1:9090
+Use `full-up` with the desired flag to switch modes through a helper.
+**Do not use `full-down` or `--volumes` to switch modes.**
 
-## API
-[API Reference](https://kea.readthedocs.io/en/stable/api.html)
-- Primary Kea Server
-  - DHCP4: Port 8100
-  - DHCP6: Port 8101
-  - DDNS: Port 8102
-- Secondary Kea Server
-  - DHCP4: Port 8200
-  - DHCP6: Port 8201
-  - DDNS: Port 8202  
+## Access
 
+Published ports bind only to `127.0.0.1`. This is a Docker bridge lab; DHCP and
+DNS are not published to the host or physical LAN.
 
-Replace port number to query the other servers
-### Status
-```bash
-curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"status-get"}' http://127.0.0.1:8100/
+| Dashboard | URL |
+| --- | --- |
+| Stork | http://127.0.0.1:8080 |
+| Grafana | http://127.0.0.1:3000 |
+| Prometheus | http://127.0.0.1:9090 |
+
+Kea HTTP control API ports:
+
+| Peer | DHCP4 | DHCP6 | DDNS |
+| --- | --- | --- | --- |
+| Primary | 8100 | 8101 | 8102 |
+| Secondary | 8200 | 8201 | 8202 |
+
+Query status below; use `ha-heartbeat` for an HA heartbeat or change the port
+for another daemon. Curl prompts for the API password.
+
+```sh
+curl --user kea -H "Content-Type: application/json" -d '{"command":"status-get"}' http://127.0.0.1:8100/
 ```
-### Heartbeat
-```bash
-curl -u kea:keapass -X POST -H "Content-Type: application/json" -d '{"command":"ha-heartbeat"}' http://127.0.0.1:8100/
-```
-## PostgreSQL
-- https://kea.readthedocs.io/en/stable/arm/admin.html#pgsql-database-create
-## Logging
-- https://kea.readthedocs.io/en/stable/arm/logging.html
-## Hooks
-[Available Libraries](https://kea.readthedocs.io/en/stable/arm/hooks.html#available-hook-libraries)
-### Included
-- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-bootp
-- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-class-cmds
-- https://kea.readthedocs.io/en/stable/arm/hooks.html#libdhcp-ddns-tuning-so-ddns-tuning
-- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-legal-log
-  - https://kea.readthedocs.io/en/stable/arm/hooks.html#forensic-log-configuration
-- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-high-availability
-  - https://kea.readthedocs.io/en/stable/arm/hooks.html#load-balancing-configuration
-  - If multithreading is enabled, use different internal ports for HA
-  - If multithreading is disabled, use the control socket port
-- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-host-cmds
-- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-lease-cmds
-  - https://kea.readthedocs.io/en/stable/arm/hooks.html#binding-variables
-- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-lease-query
-  - https://kea.readthedocs.io/en/stable/arm/hooks.html#dhcpv4-leasequery-configuration
-- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-limits
-- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-perfmon
-- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-pgsql
-- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-ddns-tuning
-- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-stat-cmds
-- https://kea.readthedocs.io/en/stable/arm/hooks.html#hooks-subnet-cmds
+
+## References
+
+- [Kea API](https://kea.readthedocs.io/en/stable/api.html)
+- [PostgreSQL setup](https://kea.readthedocs.io/en/stable/arm/admin.html#pgsql-database-create)
+- [Logging](https://kea.readthedocs.io/en/stable/arm/logging.html)
+- [Hooks](https://kea.readthedocs.io/en/stable/arm/hooks.html#available-hook-libraries)
+- [Stork](https://kea.readthedocs.io/en/stable/arm/stork.html)

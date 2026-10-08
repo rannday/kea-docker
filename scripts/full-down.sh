@@ -1,11 +1,24 @@
 #!/bin/sh
 set -eu
 
+case "$#:${1-}" in
+    0:)
+        set -- -f docker-compose.yml
+        ;;
+    1:--firewall)
+        set -- -f docker-compose.yml -f docker-compose.firewall.yml
+        ;;
+    *)
+        echo "Usage: $0 [--firewall]" >&2
+        exit 2
+        ;;
+esac
+
 repo_root=$(CDPATH= cd "$(dirname "$0")/.." && pwd -P)
 cd "$repo_root"
 
 # Remove volumes, images, orphan containers, and DHCP log contents.
-docker compose down --volumes --rmi all --remove-orphans
+docker compose "$@" down --volumes --rmi all --remove-orphans
 
 for log_path in "$repo_root/.logs/dhcp1" "$repo_root/.logs/dhcp2"; do
     if [ -d "$log_path" ]; then

@@ -11,8 +11,6 @@ services:
       - ./dns1/named.conf:/etc/bind/named.conf:ro
       - ./dns1/zones:/usr/local/share/bind/zones:ro
       - dns1:/var/cache/bind
-    cap_add:
-      - NET_ADMIN
     networks:
       net:
         ipv4_address: 192.168.69.200
@@ -37,8 +35,6 @@ services:
     volumes:
       - ./dns2/named.conf:/etc/bind/named.conf:ro
       - dns2:/var/cache/bind
-    cap_add:
-      - NET_ADMIN
     networks:
       net:
         ipv4_address: 192.168.69.201
@@ -58,10 +54,7 @@ services:
     container_name: database
     restart: unless-stopped
     volumes:
-      - ./database/nftables.conf:/etc/nftables.conf:ro
       - database:/var/lib/postgresql
-    cap_add:
-      - NET_ADMIN
     networks:
       net:
         ipv4_address: 192.168.69.2
@@ -86,15 +79,12 @@ services:
       dns1:
         condition: service_healthy
     volumes:
-      - ./dhcp1/nftables.conf:/etc/nftables.conf:ro
       - ./dhcp1/kea-dhcp4.conf:/etc/kea/kea-dhcp4.conf:ro
       - ./dhcp1/kea-dhcp6.conf:/etc/kea/kea-dhcp6.conf:ro
       - ./dhcp1/kea-dhcp-ddns.conf:/etc/kea/kea-dhcp-ddns.conf:ro
       - ./.logs/dhcp1:/var/log/kea
       - dhcp1:/var/lib/postgresql
       - dhcp1_stork:/var/lib/stork-agent
-    cap_add:
-      - NET_ADMIN
     networks:
       net:
         ipv4_address: 192.168.69.10
@@ -122,15 +112,12 @@ services:
       dns1:
         condition: service_healthy
     volumes:
-      - ./dhcp2/nftables.conf:/etc/nftables.conf:ro
       - ./dhcp2/kea-dhcp4.conf:/etc/kea/kea-dhcp4.conf:ro
       - ./dhcp2/kea-dhcp6.conf:/etc/kea/kea-dhcp6.conf:ro
       - ./dhcp2/kea-dhcp-ddns.conf:/etc/kea/kea-dhcp-ddns.conf:ro
       - ./.logs/dhcp2:/var/log/kea
       - dhcp2:/var/lib/postgresql
       - dhcp2_stork:/var/lib/stork-agent
-    cap_add:
-      - NET_ADMIN
     networks:
       net:
         ipv4_address: 192.168.69.11
@@ -160,10 +147,7 @@ services:
       dhcp2:
         condition: service_healthy
     volumes:
-      - ./backups/nftables.conf:/etc/nftables.conf:ro
       - backups:/var/lib/postgresql
-    cap_add:
-      - NET_ADMIN
     networks:
       net:
         ipv4_address: 192.168.69.69
@@ -183,13 +167,10 @@ services:
     container_name: stork
     restart: unless-stopped
     volumes:
-      - ./stork/nftables.conf:/etc/nftables.conf:ro
       - stork:/var/lib/stork
       - stork_db:/var/lib/postgresql
       - prometheus:/var/lib/prometheus
       - grafana:/var/lib/grafana
-    cap_add:
-      - NET_ADMIN
     networks:
       net:
         ipv4_address: 192.168.69.100

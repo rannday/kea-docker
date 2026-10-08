@@ -1,0 +1,58 @@
+# Select together with docker-compose.yml to enable container firewalls.
+services:
+  dns1:
+    environment:
+      ENABLE_FIREWALL: "true"
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./dns1/nftables.conf:/etc/nftables.conf:ro
+
+  dns2:
+    environment:
+      ENABLE_FIREWALL: "true"
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./dns2/nftables.conf:/etc/nftables.conf:ro
+
+  database:
+    environment:
+      ENABLE_FIREWALL: "true"
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./database/nftables.conf:/etc/nftables.conf:ro
+
+  dhcp1:
+    environment:
+      ENABLE_FIREWALL: "true"
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./dhcp1/nftables.conf:/etc/nftables.conf:ro
+
+  dhcp2:
+    environment:
+      ENABLE_FIREWALL: "true"
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./dhcp2/nftables.conf:/etc/nftables.conf:ro
+
+  backups:
+    environment:
+      ENABLE_FIREWALL: "true"
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./backups/nftables.conf:/etc/nftables.conf:ro
+
+  stork:
+    environment:
+      ENABLE_FIREWALL: "true"
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./stork/nftables.conf:/etc/nftables.conf:ro
+

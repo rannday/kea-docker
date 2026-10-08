@@ -22,6 +22,10 @@ find_bind_exporter_bin() {
 BIND_EXPORTER_BIN="$(find_bind_exporter_bin)"
 
 load_nftables() {
+  if [ "${ENABLE_FIREWALL:-false}" != "true" ]; then
+    return 0
+  fi
+
   echo "[entrypoint] loading nftables rules"
   nft -f /etc/nftables.conf
 }

@@ -139,13 +139,6 @@ services:
       dockerfile: Dockerfile
     container_name: backups
     restart: unless-stopped
-    depends_on:
-      database:
-        condition: service_healthy
-      dhcp1:
-        condition: service_healthy
-      dhcp2:
-        condition: service_healthy
     volumes:
       - backups:/var/lib/postgresql
     networks:

@@ -95,6 +95,8 @@ init_postgres_standby() {
     return
   fi
 
+  wait_for_host_port "${primary_host}" "${primary_port}" "PostgreSQL ${cluster_name} primary"
+
   rm -rf "${data_dir}"
   mkdir -p "${data_dir}"
   chown -R postgres:postgres "${data_dir}"
@@ -189,8 +191,6 @@ main_loop() {
 echo "[entrypoint] starting PostgreSQL backup setup"
 
 load_nftables
-wait_for_host_port "${PG_LEASE_PRIMARY_HOST}" "${PG_LEASE_PRIMARY_PORT}" "PostgreSQL lease primary"
-wait_for_host_port "${PG_SHARED_PRIMARY_HOST}" "${PG_SHARED_PRIMARY_PORT}" "PostgreSQL shared primary"
 
 prepare_postgres_dirs
 

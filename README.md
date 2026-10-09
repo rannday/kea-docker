@@ -95,6 +95,7 @@ curl --user kea -H "Content-Type: application/json" -d '{"command":"status-get"}
 
 ## References
 
+- [Lab exercises and scoped replica recovery](doc/EXERCISES.md)
 - [Kea API](https://kea.readthedocs.io/en/stable/api.html)
 - [PostgreSQL setup](https://kea.readthedocs.io/en/stable/arm/admin.html#pgsql-database-create)
 - [Logging](https://kea.readthedocs.io/en/stable/arm/logging.html)
